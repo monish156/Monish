@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>PropIQ — Smart Property Listings</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,800;1,9..144,700&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --brand:#1557bf;--brand-d:#0d3d8c;--brand-l:#e8f0fe;
+  --orange:#e65c00;--orange-l:#fff3e0;
+  --green:#1a7a4a;--green-l:#e8f5ee;
+  --red:#c0392b;--red-l:#fdecea;
+  --gold:#b8860b;--gold-l:#fdf6dc;
+  --ink:#1a1a2e;--ink2:#3d3d5c;--muted:#7a7a9a;
+  --bg:#f0f4ff;--white:#ffffff;--surface:#f8faff;
+  --border:#e2e8f0;--border2:#c8d3e8;
+  --grade-a:#1a7a4a;--grade-b:#1557bf;--grade-c:#b8860b;--grade-d:#c0392b;
+  --shadow:0 1px 3px rgba(26,26,46,.08),0 4px 16px rgba(26,26,46,.06);
+  --shadow-lg:0 4px 12px rgba(26,26,46,.1),0 16px 40px rgba(26,26,46,.1);
+  --sans:'Plus Jakarta Sans',sans-serif;--serif:'Fraunces',serif;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;overflow-x:hidden}
+
+/* ═══════ SCREENS ═══════ */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* ═══════════════════════════════════
+   LANDING / HOME
+═══════════════════════════════════ */
+#screen-home{background:var(--white)}
+
+/* NAV */
+.nav{display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:64px;background:var(--white);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(0,0,0,.06)}
+.nav-logo{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none}
+.nav-logo-mark{width:36px;height:36px;background:linear-gradient(135deg,var(--brand) 0%,#3d7fff 100%);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-family:var(--serif);font-size:17px;font-weight:800;font-style:italic}
+.nav-logo-text{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--ink)}
+.nav-logo-text span{color:var(--brand)}
+.nav-links{display:flex;align-items:center;gap:6px}
+.nav-link{padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--ink2);border:none;background:transparent}
+.nav-link:hover{background:var(--brand-l);color:var(--brand)}
+.nav-link.active{color:var(--brand)}
+.nav-cta-row{display:flex;align-items:center;gap:8px}
+.nav-btn{padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;border:none}
+.nav-btn.outline{border:1.5px solid var(--brand);color:var(--brand);background:transparent}
+.nav-btn.outline:hover{background:var(--brand-l)}
+.nav-btn.filled{background:var(--brand);color:#fff}
+.nav-btn.filled:hover{background:var(--brand-d);transform:translateY(-1px);box-shadow:0 4px 12px rgba(21,87,191,.3)}
+
+/* HERO */
+.hero{background:linear-gradient(135deg,#0d2461 0%,#1557bf 50%,#1a7aab 100%);padding:64px 40px 80px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+.hero::after{content:'';position:absolute;bottom:-40px;right:-40px;width:400px;height:400px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none}
+.hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.9);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:5px 14px;border-radius:100px;margin-bottom:20px}
+.hero-title{font-family:var(--serif);font-size:clamp(2.4rem,5vw,4rem);font-weight:800;color:#fff;line-height:1.1;margin-bottom:12px}
+.hero-title em{font-style:italic;color:#7ec8ff}
+.hero-sub{font-size:16px;color:rgba(255,255,255,.75);line-height:1.7;max-width:520px;margin-bottom:36px}
+
+/* SEARCH BOX */
+.hero-search{background:#fff;border-radius:14px;padding:6px;display:flex;gap:0;box-shadow:0 8px 32px rgba(0,0,0,.2);max-width:700px}
+.hs-tabs{display:flex;gap:4px;padding:4px 4px 8px;border-bottom:1px solid var(--border);margin-bottom:4px;flex-wrap:wrap}
+.hs-tab{padding:5px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--muted);border:none;background:transparent}
+.hs-tab.active{background:var(--brand);color:#fff}
+.hs-inputs{display:flex;gap:8px;align-items:center;padding:0 4px 4px;flex-wrap:wrap}
+.hs-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:500;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s;min-width:140px}
+.hs-input:focus{border-color:var(--brand)}
+.hs-search-btn{padding:10px 24px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-family:var(--sans);font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.hs-search-btn:hover{background:var(--brand-d);transform:translateY(-1px)}
+
+/* PROPERTY TYPE PILLS */
+.prop-pills{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap}
+.pp{display:flex;align-items:center;gap:6px;padding:8px 16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:100px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s}
+.pp:hover{background:rgba(255,255,255,.2)}
+.pp-icon{font-size:16px}
+
+/* STATS BAR */
+.stats-bar{background:#fff;border-bottom:1px solid var(--border);padding:16px 40px}
+.stats-inner{max-width:1100px;margin:0 auto;display:flex;gap:40px;align-items:center;flex-wrap:wrap}
+.stat-item{display:flex;flex-direction:column;gap:2px}
+.stat-num{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--brand)}
+.stat-lbl{font-size:11px;color:var(--muted);font-weight:500}
+.stat-divider{width:1px;height:36px;background:var(--border);flex-shrink:0}
+
+/* HOW IT WORKS */
+.section{padding:60px 40px;max-width:1100px;margin:0 auto}
+.section-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand);margin-bottom:8px}
+.section-title{font-family:var(--serif);font-size:clamp(1.6rem,3vw,2.4rem);font-weight:700;color:var(--ink);margin-bottom:8px}
+.section-sub{font-size:14px;color:var(--muted);line-height:1.7;max-width:480px;margin-bottom:36px}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.how-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow);transition:all .2s}
+.how-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}
+.how-icon{width:52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px}
+.how-icon.blue{background:var(--brand-l)}
+.how-icon.green{background:var(--green-l)}
+.how-icon.orange{background:var(--orange-l)}
+.how-num{font-family:var(--serif);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px}
+.how-title{font-family:var(--serif);font-size:17px;font-weight:700;margin-bottom:8px}
+.how-desc{font-size:13px;color:var(--muted);line-height:1.65}
+
+/* CTA BAND */
+.cta-band{background:linear-gradient(135deg,var(--brand) 0%,#1a7aab 100%);padding:48px 40px;text-align:center}
+.cta-band-title{font-family:var(--serif);font-size:2rem;font-weight:700;color:#fff;margin-bottom:10px}
+.cta-band-sub{font-size:14px;color:rgba(255,255,255,.8);margin-bottom:28px}
+.cta-band-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.cta-band-btn{padding:13px 30px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;border:2px solid rgba(255,255,255,.3)}
+.cta-band-btn.white{background:#fff;color:var(--brand);border-color:#fff}
+.cta-band-btn.white:hover{background:#f0f4ff}
+.cta-band-btn.ghost{background:transparent;color:#fff}
+.cta-band-btn.ghost:hover{background:rgba(255,255,255,.1)}
+
+/* FOOTER */
+.footer{background:var(--ink);color:rgba(255,255,255,.7);padding:24px 40px;font-size:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.footer-logo{font-family:var(--serif);font-size:16px;font-weight:700;color:#fff}
+.footer-logo span{color:#7ec8ff}
+
+/* ═══════════════════════════════════
+   SELLER PORTAL
+═══════════════════════════════════ */
+#screen-seller{background:var(--bg)}
+.portal-nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.portal-nav-left{display:flex;align-items:center;gap:16px}
+.portal-back{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--brand);cursor:pointer;padding:6px 12px;border-radius:6px;transition:background .15s}
+.portal-back:hover{background:var(--brand-l)}
+.portal-divider{width:1px;height:20px;background:var(--border)}
+.portal-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--ink)}
+.portal-badge{padding:4px 12px;border-radius:100px;background:var(--orange-l);color:var(--orange);font-size:11px;font-weight:700;letter-spacing:.05em}
+
+/* SELLER LAYOUT */
+.seller-wrap{display:grid;grid-template-columns:380px 1fr;min-height:calc(100vh - 60px)}
+
+/* SELLER SIDEBAR */
+.seller-sidebar{background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;position:sticky;top:60px;height:calc(100vh - 60px)}
+.sb-section{padding:20px 22px;border-bottom:1px solid var(--border)}
+.sb-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:block}
+.sb-title{font-size:17px;font-weight:800;color:var(--ink);margin-bottom:4px;font-family:var(--serif)}
+.sb-sub{font-size:12px;color:var(--muted);line-height:1.55}
+
+/* listing tabs */
+.listing-tabs{display:flex;flex-wrap:wrap;gap:5px}
+.ltab{padding:5px 12px;border-radius:6px;border:1.5px solid var(--border2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;background:transparent;color:var(--muted);white-space:nowrap;position:relative;flex-shrink:0}
+.ltab:hover{border-color:var(--brand);color:var(--brand)}
+.ltab.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.ltab.has-data::after{content:'';position:absolute;top:2px;right:2px;width:5px;height:5px;border-radius:50%;background:#22c55e}
+.ltab.active.has-data::after{background:#bef264}
+.add-listing-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;border:1.5px dashed var(--brand);font-size:11px;font-weight:700;cursor:pointer;transition:all .15s;background:transparent;color:var(--brand)}
+.add-listing-btn:hover{background:var(--brand-l)}
+
+/* upload area */
+.drop-zone{border:2px dashed var(--border2);border-radius:10px;padding:20px 16px;text-align:center;cursor:pointer;position:relative;transition:all .2s;background:var(--surface)}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--brand);background:var(--brand-l)}
+.drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{font-size:28px;margin-bottom:6px;display:block}
+.dz-main{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:2px}
+.dz-hint{font-size:10px;color:var(--muted)}
+.count-bar-wrap{margin-top:8px}
+.count-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.cbar{height:4px;background:var(--border);border-radius:100px;overflow:hidden}
+.cbar-fill{height:100%;background:linear-gradient(90deg,var(--brand),#3d7fff);border-radius:100px;transition:width .3s ease}
+
+/* thumbs */
+.thumbs-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.tc{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;border:1.5px solid var(--border);background:var(--surface)}
+.tc img{width:100%;height:100%;object-fit:cover;display:block}
+.tc .tr-btn{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .1s;z-index:2}
+.tc:hover .tr-btn{opacity:1}
+.tc .t-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.tc .t-bar.A{background:var(--grade-a)}.tc .t-bar.B{background:var(--grade-b)}.tc .t-bar.C{background:var(--grade-c)}.tc .t-bar.D{background:var(--grade-d)}
+.tc .t-bar.proc{background:var(--brand);animation:pulse .5s infinite}
+.tc .t-grd{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;font-size:7px;font-weight:800;display:flex;align-items:center;justify-content:center;border:1.5px solid currentColor;background:rgba(255,255,255,.9)}
+.tc .t-grd.A{color:var(--grade-a)}.tc .t-grd.B{color:var(--grade-b)}.tc .t-grd.C{color:var(--grade-c)}.tc .t-grd.D{color:var(--grade-d)}
+
+/* progress */
+.prog-wrap{display:none}
+.prog-lbl{font-size:10px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.prog-track{height:4px;background:var(--border);border-radius:100px;overflow:hidden}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--brand),#3d7fff);border-radius:100px;transition:width .3s ease;width:0%}
+
+/* action btns */
+.action-btns{display:flex;flex-direction:column;gap:6px}
+.abtn{width:100%;padding:11px;border-radius:8px;border:none;cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:700;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.abtn.primary{background:var(--brand);color:#fff}
+.abtn.primary:hover:not(:disabled){background:var(--brand-d);transform:translateY(-1px);box-shadow:0 4px 12px rgba(21,87,191,.25)}
+.abtn.secondary{background:transparent;color:var(--ink);border:1.5px solid var(--border2)}
+.abtn.secondary:hover:not(:disabled){background:var(--surface)}
+.abtn.danger{background:transparent;color:var(--red);border:1.5px solid rgba(192,57,43,.25)}
+.abtn.danger:hover:not(:disabled){background:var(--red-l)}
+.abtn:disabled{opacity:.38;cursor:not-allowed;transform:none!important}
+
+/* grade legend */
+.grade-legend{margin-top:auto;padding:16px 22px;border-top:1px solid var(--border);background:var(--surface)}
+.grade-legend-title{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.grade-legend-items{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.gli{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-weight:500}
+.gli-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* model status */
+.model-status{padding:10px 22px;background:var(--brand-l);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;font-size:11px;color:var(--brand);font-weight:600}
+.ms-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0}
+.ms-dot.ready{background:var(--green);animation:pulse 2s infinite}
+.ms-dot.loading{background:var(--brand);animation:pulse .5s infinite}
+
+/* SELLER RIGHT — listing wall */
+.seller-wall{padding:24px 28px;overflow-y:auto}
+.wall-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.wall-title{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--ink)}
+.wall-sub{font-size:12px;color:var(--muted);margin-top:2px}
+.listings-wall-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.wl-card{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#fff;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
+.wl-card.clickable:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);border-color:var(--brand)}
+.wl-mosaic{position:relative;aspect-ratio:4/3;background:var(--surface)}
+.wl-mosaic-grid{display:grid;width:100%;height:100%;gap:2px;background:var(--border)}
+.wl-mosaic-grid.g1{grid-template-columns:1fr}
+.wl-mosaic-grid.g2{grid-template-columns:1fr 1fr}
+.wl-mosaic-grid.g3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+.wl-mosaic-grid.g3 img:first-child{grid-row:1/3}
+.wl-mosaic-grid.g4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.wl-mosaic-grid img{width:100%;height:100%;object-fit:cover;display:block}
+.wl-grade-badge{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border:2px solid currentColor;background:rgba(255,255,255,.95)}
+.wl-grade-badge.A{color:var(--grade-a)}.wl-grade-badge.B{color:var(--grade-b)}.wl-grade-badge.C{color:var(--grade-c)}.wl-grade-badge.D{color:var(--grade-d)}
+.wl-type-tag{position:absolute;top:8px;left:8px;padding:3px 8px;border-radius:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:rgba(0,0,0,.65);color:#fff;backdrop-filter:blur(4px)}
+.wl-score-bar{position:absolute;bottom:0;left:0;right:0;height:3px}
+.wl-score-bar .f{height:100%}
+.wl-score-bar .f.A{background:var(--grade-a)}.wl-score-bar .f.B{background:var(--grade-b)}.wl-score-bar .f.C{background:var(--grade-c)}.wl-score-bar .f.D{background:var(--grade-d)}
+.wl-info{padding:12px 14px}
+.wl-name{font-weight:800;font-size:13px;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wl-price{font-family:var(--serif);font-size:15px;font-weight:700;color:var(--brand);margin-bottom:4px}
+.wl-meta{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted);font-weight:500;flex-wrap:wrap}
+.wl-meta-dot{width:3px;height:3px;border-radius:50%;background:var(--border2)}
+.wl-score-row{display:flex;align-items:center;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+.wl-score{font-size:10px;font-weight:700}
+.wl-score.A{color:var(--grade-a)}.wl-score.B{color:var(--grade-b)}.wl-score.C{color:var(--grade-c)}.wl-score.D{color:var(--grade-d)}
+.wl-photos{font-size:10px;color:var(--muted)}
+
+/* ═══════════════════════════════════
+   BUYER / BROWSE
+═══════════════════════════════════ */
+#screen-buyer{background:var(--bg)}
+.buyer-nav{display:flex;align-items:center;justify-content:space-between;padding:0 32px;height:60px;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+
+/* search bar sticky */
+.buyer-search-sticky{background:#fff;border-bottom:1px solid var(--border);padding:12px 32px;position:sticky;top:60px;z-index:90;box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.bss-row{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.bss-input-wrap{flex:1;display:flex;align-items:center;border:1.5px solid var(--border2);border-radius:8px;overflow:hidden;background:#fff;transition:border-color .15s}
+.bss-input-wrap:focus-within{border-color:var(--brand)}
+.bss-search-icon{padding:0 12px;font-size:18px;color:var(--muted)}
+.bss-input{flex:1;padding:10px 0;border:none;outline:none;font-size:14px;font-weight:500;color:var(--ink);background:transparent}
+.bss-btn{padding:10px 22px;background:var(--brand);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;white-space:nowrap}
+.bss-btn:hover{background:var(--brand-d)}
+
+/* filter row */
+.bss-filters{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+.bss-filters::-webkit-scrollbar{height:2px}.bss-filters::-webkit-scrollbar-thumb{background:var(--border2);border-radius:100px}
+.fchip{padding:5px 14px;border-radius:100px;border:1.5px solid var(--border2);font-size:11px;font-weight:600;cursor:pointer;transition:all .15s;background:#fff;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:5px;flex-shrink:0}
+.fchip:hover{border-color:var(--brand);color:var(--brand)}
+.fchip.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+
+/* results layout */
+.buyer-body{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 130px)}
+
+/* sidebar filters */
+.filter-sidebar{background:#fff;border-right:1px solid var(--border);padding:20px;overflow-y:auto;position:sticky;top:130px;height:calc(100vh - 130px)}
+.fs-section{margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.fs-section:last-child{border-bottom:none}
+.fs-title{font-size:12px;font-weight:700;color:var(--ink);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em}
+.fs-option{display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer;font-size:13px;color:var(--ink2);font-weight:500;transition:color .15s}
+.fs-option:hover{color:var(--brand)}
+.fs-option input[type=checkbox]{accent-color:var(--brand);width:14px;height:14px;cursor:pointer}
+.fs-option.grade-A .fs-label::before{content:'A';display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--grade-a);color:var(--grade-a);font-size:9px;font-weight:800;margin-right:5px}
+.fs-option.grade-B .fs-label::before{content:'B';display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--grade-b);color:var(--grade-b);font-size:9px;font-weight:800;margin-right:5px}
+.fs-option.grade-C .fs-label::before{content:'C';display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--grade-c);color:var(--grade-c);font-size:9px;font-weight:800;margin-right:5px}
+.fs-option.grade-D .fs-label::before{content:'D';display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--grade-d);color:var(--grade-d);font-size:9px;font-weight:800;margin-right:5px}
+.fs-label{font-size:12px;font-weight:500}
+
+/* main results */
+.results-main{padding:20px 24px;overflow-y:auto}
+.results-top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.rt-left{display:flex;align-items:center;gap:10px}
+.rt-count{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--ink)}
+.rt-count span{color:var(--brand)}
+.grade-summary-pills{display:flex;gap:5px;flex-wrap:wrap}
+.gsp{padding:3px 10px;border-radius:100px;font-size:10px;font-weight:700;border:1.5px solid currentColor}
+.gsp.A{color:var(--grade-a);background:var(--green-l)}.gsp.B{color:var(--grade-b);background:var(--brand-l)}.gsp.C{color:var(--grade-c);background:var(--gold-l)}.gsp.D{color:var(--grade-d);background:var(--red-l)}
+.rt-right{display:flex;align-items:center;gap:8px}
+.sort-label{font-size:12px;color:var(--muted);font-weight:500}
+.sort-sel{border:1.5px solid var(--border2);border-radius:8px;padding:6px 10px;font-family:var(--sans);font-size:12px;font-weight:600;background:#fff;color:var(--ink);cursor:pointer;outline:none}
+
+/* PROPERTY CARDS */
+.prop-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.prop-card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:all .22s;animation:fadeUp .4s ease both}
+.prop-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--brand)}
+.pc-img-wrap{position:relative;background:var(--surface)}
+.pc-mosaic{display:grid;aspect-ratio:16/10;gap:2px;background:var(--border)}
+.pc-mosaic.g1{grid-template-columns:1fr}
+.pc-mosaic.g2{grid-template-columns:1fr 1fr}
+.pc-mosaic.g3{grid-template-columns:2fr 1fr;grid-template-rows:1fr 1fr}
+.pc-mosaic.g3 img:first-child{grid-row:1/3}
+.pc-mosaic.g4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.pc-mosaic img{width:100%;height:100%;object-fit:cover;display:block}
+.pc-rank-tag{position:absolute;top:10px;left:10px;padding:3px 9px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.04em;backdrop-filter:blur(6px);background:rgba(255,255,255,.9);border:1.5px solid currentColor}
+.pc-rank-tag.r1{color:var(--grade-a)}.pc-rank-tag.r2{color:var(--grade-b)}.pc-rank-tag.r3{color:var(--grade-c)}.pc-rank-tag.rn{color:var(--muted)}
+.pc-grade-circle{position:absolute;top:10px;right:10px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:900;border:2.5px solid currentColor;background:rgba(255,255,255,.95);backdrop-filter:blur(4px)}
+.pc-grade-circle.A{color:var(--grade-a)}.pc-grade-circle.B{color:var(--grade-b)}.pc-grade-circle.C{color:var(--grade-c)}.pc-grade-circle.D{color:var(--grade-d)}
+.pc-prop-type{position:absolute;bottom:10px;left:10px;padding:3px 9px;border-radius:5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;background:rgba(0,0,0,.65);color:#fff;backdrop-filter:blur(4px)}
+.pc-photo-count{position:absolute;bottom:10px;right:10px;padding:3px 8px;border-radius:5px;font-size:9px;font-weight:600;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;gap:4px}
+.pc-score-strip{position:absolute;bottom:0;left:0;right:0;height:4px}
+.pc-score-strip .sf{height:100%}
+.pc-score-strip .sf.A{background:var(--grade-a)}.pc-score-strip .sf.B{background:var(--grade-b)}.pc-score-strip .sf.C{background:var(--grade-c)}.pc-score-strip .sf.D{background:var(--grade-d)}
+.pc-body{padding:14px 16px}
+.pc-type-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.pc-type-badge.house{background:#e8f0fe;color:var(--brand)}
+.pc-type-badge.land{background:#fff3e0;color:var(--orange)}
+.pc-type-badge.rental{background:#e8f5ee;color:var(--green)}
+.pc-type-badge.bachelor{background:#fdf6dc;color:var(--gold)}
+.pc-type-badge.pg{background:#fdecea;color:var(--red)}
+.pc-name{font-weight:800;font-size:14px;color:var(--ink);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-price{font-family:var(--serif);font-size:18px;font-weight:700;color:var(--brand);margin-bottom:6px}
+.pc-amenities{display:flex;gap:10px;font-size:11px;color:var(--muted);font-weight:500;margin-bottom:8px;flex-wrap:wrap}
+.pc-amenity{display:flex;align-items:center;gap:3px}
+.pc-location{font-size:11px;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:4px}
+.pc-bottom{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--border)}
+.pc-seller-name{font-size:11px;color:var(--muted);font-weight:600}
+.pc-score-label{font-size:11px;font-weight:800}
+.pc-score-label.A{color:var(--grade-a)}.pc-score-label.B{color:var(--grade-b)}.pc-score-label.C{color:var(--grade-c)}.pc-score-label.D{color:var(--grade-d)}
+.pc-metrics-row{display:flex;gap:4px;margin-top:6px}
+.pc-mc{font-size:9px;padding:2px 5px;border-radius:4px;border:1px solid;font-weight:600}
+.pc-mc.good{color:var(--grade-a);border-color:rgba(26,122,74,.25);background:var(--green-l)}
+.pc-mc.ok{color:var(--grade-c);border-color:rgba(184,134,11,.25);background:var(--gold-l)}
+.pc-mc.bad{color:var(--grade-d);border-color:rgba(192,57,43,.25);background:var(--red-l)}
+
+/* empty state */
+.buyer-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;text-align:center;gap:14px;padding:40px}
+.be-icon{font-size:56px;margin-bottom:4px}
+.be-title{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--ink);max-width:300px}
+.be-sub{font-size:13px;color:var(--muted);max-width:280px;line-height:1.65}
+
+/* ═══════════════════════════════════
+   ADD LISTING MODAL
+═══════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,26,46,.6);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:24px;animation:fadeIn .2s ease}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:18px;width:min(580px,96vw);max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2);animation:popIn .25s ease}
+.modal-head{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-h-title{font-family:var(--serif);font-size:18px;font-weight:700}
+.modal-close{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:transparent;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.modal-close:hover{background:var(--surface)}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-field{display:flex;flex-direction:column;gap:6px}
+.form-label{font-size:11px;font-weight:700;color:var(--ink2);letter-spacing:.04em}
+.form-input{padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--sans);font-size:13px;font-weight:500;background:var(--surface);color:var(--ink);outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--brand)}
+.form-select{padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--sans);font-size:13px;font-weight:500;background:var(--surface);color:var(--ink);outline:none;cursor:pointer;transition:border-color .15s;appearance:none}
+.form-select:focus{border-color:var(--brand)}
+.form-textarea{padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;font-family:var(--sans);font-size:13px;background:var(--surface);color:var(--ink);outline:none;resize:vertical;min-height:60px;transition:border-color .15s}
+.form-textarea:focus{border-color:var(--brand)}
+.prop-type-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pt-opt{padding:10px 8px;border:1.5px solid var(--border);border-radius:8px;text-align:center;cursor:pointer;transition:all .15s;background:var(--surface)}
+.pt-opt:hover{border-color:var(--brand)}
+.pt-opt.sel{background:var(--brand);border-color:var(--brand);color:#fff}
+.pt-opt.sel .pt-icon,.pt-opt.sel .pt-label{color:#fff}
+.pt-icon{font-size:22px;display:block;margin-bottom:4px}
+.pt-label{font-size:10px;font-weight:700;color:var(--ink2)}
+.modal-footer{padding:0 24px 20px;display:flex;gap:8px}
+.mf-btn{flex:1;padding:12px;border-radius:8px;border:2px solid var(--brand);cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:700;transition:all .15s}
+.mf-btn.primary{background:var(--brand);color:#fff}
+.mf-btn.primary:hover{background:var(--brand-d);transform:translateY(-1px)}
+.mf-btn.secondary{background:transparent;color:var(--brand)}
+.mf-btn.secondary:hover{background:var(--brand-l)}
+.mf-btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* ═══════════════════════════════════
+   LIGHTBOX — LISTING DETAIL
+═══════════════════════════════════ */
+.lightbox{position:fixed;inset:0;background:rgba(26,26,46,.85);z-index:300;display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px;backdrop-filter:blur(6px);animation:fadeIn .2s ease}
+.lightbox.open{display:flex}
+.lb-box{background:#fff;border-radius:20px;width:min(1000px,97vw);margin:auto;box-shadow:0 24px 80px rgba(0,0,0,.3);animation:popIn .25s ease;overflow:hidden}
+
+/* lb header */
+.lb-head{background:linear-gradient(135deg,var(--brand) 0%,#1a7aab 100%);padding:20px 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.lb-prop-info{color:#fff}
+.lb-prop-type{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:100px;background:rgba(255,255,255,.15);font-size:10px;font-weight:700;letter-spacing:.05em;margin-bottom:8px;border:1px solid rgba(255,255,255,.3)}
+.lb-prop-name{font-family:var(--serif);font-size:20px;font-weight:700;margin-bottom:4px}
+.lb-prop-price{font-size:22px;font-weight:800;color:#7ec8ff;margin-bottom:6px;font-family:var(--serif)}
+.lb-prop-meta{font-size:12px;color:rgba(255,255,255,.75);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.lb-head-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.lb-grade-big{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:900;border:3px solid currentColor;background:rgba(255,255,255,.95)}
+.lb-grade-big.A{color:var(--grade-a)}.lb-grade-big.B{color:var(--grade-b)}.lb-grade-big.C{color:var(--grade-c)}.lb-grade-big.D{color:var(--grade-d)}
+.lb-close{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,.4);background:transparent;cursor:pointer;font-size:14px;color:#fff;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.lb-close:hover{background:rgba(255,255,255,.15)}
+
+/* lb overview */
+.lb-overview{padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border);display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:start}
+.lb-grade-summary{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fff;border:1px solid var(--border);border-radius:12px;min-width:200px}
+.lb-grade-circle{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;border:2.5px solid currentColor;flex-shrink:0}
+.lb-grade-circle.A{color:var(--grade-a);background:var(--green-l)}.lb-grade-circle.B{color:var(--grade-b);background:var(--brand-l)}.lb-grade-circle.C{color:var(--grade-c);background:var(--gold-l)}.lb-grade-circle.D{color:var(--grade-d);background:var(--red-l)}
+.lb-grade-txt{flex:1}
+.lb-grade-label{font-weight:800;font-size:14px;margin-bottom:2px}
+.lb-grade-label.A{color:var(--grade-a)}.lb-grade-label.B{color:var(--grade-b)}.lb-grade-label.C{color:var(--grade-c)}.lb-grade-label.D{color:var(--grade-d)}
+.lb-grade-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.lb-metrics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.lb-mm{background:#fff;border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.lb-mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.lb-mm-name{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.lb-mm-val{font-size:10px;font-weight:800}
+.lb-mm-val.good{color:var(--grade-a)}.lb-mm-val.ok{color:var(--grade-c)}.lb-mm-val.bad{color:var(--grade-d)}
+.lb-bar{height:3px;background:rgba(0,0,0,.08);border-radius:100px;overflow:hidden;margin-bottom:2px}
+.lb-bar-fill{height:100%;border-radius:100px}
+.lb-bar-fill.good{background:var(--grade-a)}.lb-bar-fill.ok{background:var(--grade-c)}.lb-bar-fill.bad{background:var(--grade-d)}
+.lb-mm-lbl{font-size:8px;color:var(--muted);font-weight:500}
+
+/* lb gallery */
+.lb-gallery-section{padding:20px 24px}
+.lb-gallery-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.lb-gallery-title{font-family:var(--serif);font-size:16px;font-weight:700;color:var(--ink)}
+.lb-gallery-sub{font-size:11px;color:var(--muted)}
+.lb-photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.lb-photo-item{border-radius:10px;overflow:hidden;border:1.5px solid var(--border);background:var(--surface);transition:all .15s;cursor:zoom-in}
+.lb-photo-item:hover{border-color:var(--brand);transform:scale(1.02);box-shadow:var(--shadow)}
+.lb-photo-item img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block}
+.lb-photo-info{padding:7px 9px}
+.lb-photo-room{font-size:11px;font-weight:700;color:var(--ink);text-transform:capitalize;margin-bottom:2px}
+.lb-photo-meta{display:flex;align-items:center;justify-content:space-between;font-size:9px;color:var(--muted)}
+.lb-photo-grade{font-weight:800}
+.lb-photo-grade.A{color:var(--grade-a)}.lb-photo-grade.B{color:var(--grade-b)}.lb-photo-grade.C{color:var(--grade-c)}.lb-photo-grade.D{color:var(--grade-d)}
+.lb-score-mini{height:2px;background:rgba(0,0,0,.06);border-radius:100px;overflow:hidden;margin-top:4px}
+.lb-score-mini-fill{height:100%;border-radius:100px}
+.lb-score-mini-fill.A{background:var(--grade-a)}.lb-score-mini-fill.B{background:var(--grade-b)}.lb-score-mini-fill.C{background:var(--grade-c)}.lb-score-mini-fill.D{background:var(--grade-d)}
+
+/* ── MISC ── */
+.divider{height:1px;background:var(--border)}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@media(max-width:900px){.seller-wrap{grid-template-columns:1fr}.buyer-body{grid-template-columns:1fr}.filter-sidebar{display:none}.lb-overview{grid-template-columns:1fr}.form-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════
+     HOME / LANDING
+════════════════════════════════════ -->
+<div id="screen-home" class="screen active">
+  <nav class="nav">
+    <div class="nav-logo" onclick="showScreen('screen-home')">
+      <div class="nav-logo-mark">P</div>
+      <div class="nav-logo-text">Prop<span>IQ</span></div>
+    </div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="goBuyer()">Buy</button>
+      <button class="nav-link" onclick="goBuyer()">Rent</button>
+      <button class="nav-link" onclick="goBuyer()">Land</button>
+      <button class="nav-link">PG / Hostel</button>
+      <button class="nav-link">Projects</button>
+    </div>
+    <div class="nav-cta-row">
+      <button class="nav-btn outline" onclick="goSeller()">Post Property</button>
+      <button class="nav-btn filled" onclick="goBuyer()">Browse Listings</button>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">🏆 AI-Powered Quality Grading</div>
+      <h1 class="hero-title">Find Your Perfect Property<br/><em>Graded by Intelligence</em></h1>
+      <p class="hero-sub">Every listing is scored A–D by our AI — analysing photo quality, lighting, clarity and presentation. No more guessing. Just smart property search.</p>
+      <div class="hero-search">
+        <div class="hs-tabs">
+          <button class="hs-tab active" onclick="setHSTab(this,'buy')">Buy</button>
+          <button class="hs-tab" onclick="setHSTab(this,'rent')">Rent</button>
+          <button class="hs-tab" onclick="setHSTab(this,'land')">Land / Plot</button>
+          <button class="hs-tab" onclick="setHSTab(this,'pg')">PG / Hostel</button>
+        </div>
+        <div class="hs-inputs">
+          <input class="hs-input" id="hs-location" type="text" placeholder="Enter location, city or area…"/>
+          <select class="hs-input" id="hs-bhk" style="max-width:130px;cursor:pointer">
+            <option value="">BHK Type</option>
+            <option>1 BHK</option><option>2 BHK</option><option>3 BHK</option><option>4+ BHK</option>
+          </select>
+          <button class="hs-search-btn" onclick="heroSearch()">🔍 Search</button>
+        </div>
+      </div>
+      <div class="prop-pills">
+        <div class="pp" onclick="heroPropFilter('house')"><span class="pp-icon">🏠</span>Houses</div>
+        <div class="pp" onclick="heroPropFilter('land')"><span class="pp-icon">🌾</span>Land/Plots</div>
+        <div class="pp" onclick="heroPropFilter('rental')"><span class="pp-icon">🏢</span>Rental Flats</div>
+        <div class="pp" onclick="heroPropFilter('bachelor')"><span class="pp-icon">🛋️</span>Bachelor Rooms</div>
+        <div class="pp" onclick="heroPropFilter('pg')"><span class="pp-icon">🎓</span>PG for Students</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stats-inner">
+      <div class="stat-item"><span class="stat-num" id="stat-listings">0</span><span class="stat-lbl">Active Listings</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><span class="stat-num" id="stat-sellers">0</span><span class="stat-lbl">Verified Sellers</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><span class="stat-num" id="stat-graded">0</span><span class="stat-lbl">AI-Graded Photos</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><span class="stat-num">A–D</span><span class="stat-lbl">Quality Scale</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-eyebrow">How PropIQ Works</div>
+    <h2 class="section-title">Smart listings. Better decisions.</h2>
+    <p class="section-sub">Our AI analyses every uploaded photo for quality, giving each listing a grade so buyers know exactly what they're getting.</p>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-icon blue">📸</div>
+        <div class="how-num">Step 01</div>
+        <div class="how-title">Sellers Upload Photos</div>
+        <div class="how-desc">Sellers create a listing and upload up to 10 property photos — rooms, exterior, garden and more.</div>
+      </div>
+      <div class="how-card">
+        <div class="how-icon orange">🤖</div>
+        <div class="how-num">Step 02</div>
+        <div class="how-title">AI Grades Every Image</div>
+        <div class="how-desc">Our model analyses lighting, blur, tilt, clutter and contrast — assigning an overall A–D quality grade to the listing.</div>
+      </div>
+      <div class="how-card">
+        <div class="how-icon green">🏆</div>
+        <div class="how-num">Step 03</div>
+        <div class="how-title">Buyers See Best First</div>
+        <div class="how-desc">Search results are ranked by image quality grade — Grade A listings appear first so you always see the best-presented properties.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cta-band">
+    <div class="cta-band-title">Ready to list your property?</div>
+    <div class="cta-band-sub">Create your account, upload 10 photos and get an AI quality grade in seconds.</div>
+    <div class="cta-band-btns">
+      <button class="cta-band-btn white" onclick="goSeller()">Post a Property Free</button>
+      <button class="cta-band-btn ghost" onclick="goBuyer()">Browse Listings</button>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">Prop<span>IQ</span></div>
+    <div>© 2025 PropIQ · AI-powered real estate grading platform</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     SELLER PORTAL
+════════════════════════════════════ -->
+<div id="screen-seller" class="screen">
+  <div class="portal-nav">
+    <div class="portal-nav-left">
+      <div class="portal-back" onclick="showScreen('screen-home')">← PropIQ Home</div>
+      <div class="portal-divider"></div>
+      <div class="portal-title">Seller Portal</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="model-status" id="seller-ms" style="padding:6px 14px;border-radius:100px;font-size:11px">
+        <div class="ms-dot" id="ms-dot"></div>
+        <span id="ms-txt">Initialising AI…</span>
+      </div>
+      <div class="portal-badge">SELLER</div>
+      <button class="nav-btn filled" onclick="goBuyer()" style="font-size:12px;padding:7px 16px">View Buyer Side →</button>
+    </div>
+  </div>
+
+  <div class="seller-wrap">
+    <!-- SIDEBAR -->
+    <div class="seller-sidebar">
+      <div class="sb-section">
+        <span class="sb-label">Your Listings</span>
+        <div class="sb-title" id="sb-title">Select a Listing</div>
+        <div class="sb-sub" id="sb-sub">Click a listing tab or create a new one to start uploading photos.</div>
+      </div>
+
+      <div class="sb-section">
+        <span class="sb-label" style="margin-bottom:8px">Listing Accounts</span>
+        <div class="listing-tabs" id="listing-tabs" style="margin-bottom:10px"></div>
+        <button class="add-listing-btn" onclick="openAddModal()">＋ Post New Property</button>
+      </div>
+
+      <div id="sb-upload-wrap" style="display:none">
+        <div class="sb-section">
+          <span class="sb-label">Upload Photos</span>
+          <div class="drop-zone" id="s-dz">
+            <input type="file" id="s-fi" accept="image/*" multiple onchange="handleSellerFiles(event)"/>
+            <span class="dz-icon">📸</span>
+            <div class="dz-main">Drop property photos here</div>
+            <div class="dz-hint">Up to 10 photos · JPG PNG WEBP</div>
+          </div>
+          <div class="count-bar-wrap">
+            <div class="count-row"><span id="s-count">0 / 10 photos</span><span id="s-count-pct">0%</span></div>
+            <div class="cbar"><div class="cbar-fill" id="s-cbar" style="width:0%"></div></div>
+          </div>
+        </div>
+        <div class="sb-section" id="sb-thumbs-sec" style="display:none">
+          <span class="sb-label">Photos</span>
+          <div class="thumbs-grid" id="sb-thumbs"></div>
+        </div>
+        <div class="sb-section prog-wrap" id="sb-prog-wrap">
+          <div class="prog-lbl" id="sb-prog-lbl">Analysing…</div>
+          <div class="prog-track"><div class="prog-fill" id="sb-prog-fill"></div></div>
+        </div>
+        <div class="sb-section" id="sb-actions" style="display:none">
+          <div class="action-btns">
+            <button class="abtn primary" id="sb-analyse-btn" onclick="analyseAll()">⚡ Analyse &amp; Grade All Photos</button>
+            <button class="abtn secondary" onclick="clearListingImgs()">Clear Photos</button>
+            <button class="abtn danger" onclick="deleteListing()">Delete Listing</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grade-legend">
+        <div class="grade-legend-title">PropIQ Quality Grade</div>
+        <div class="grade-legend-items">
+          <div class="gli"><div class="gli-dot" style="background:var(--grade-a)"></div>A Excellent 78+</div>
+          <div class="gli"><div class="gli-dot" style="background:var(--grade-b)"></div>B Good 58–77</div>
+          <div class="gli"><div class="gli-dot" style="background:var(--grade-c)"></div>C Fair 38–57</div>
+          <div class="gli"><div class="gli-dot" style="background:var(--grade-d)"></div>D Poor 0–37</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LISTING WALL -->
+    <div class="seller-wall">
+      <div class="wall-header">
+        <div>
+          <div class="wall-title">All Your Listings</div>
+          <div class="wall-sub" id="wall-sub">No listings yet. Click "Post New Property" to begin.</div>
+        </div>
+      </div>
+      <div class="listings-wall-grid" id="wall-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     BUYER / BROWSE
+════════════════════════════════════ -->
+<div id="screen-buyer" class="screen">
+  <div class="buyer-nav">
+    <div class="nav-logo" onclick="showScreen('screen-home')" style="cursor:pointer;display:flex;align-items:center;gap:8px">
+      <div class="nav-logo-mark">P</div>
+      <div class="nav-logo-text">Prop<span>IQ</span></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <button class="nav-btn outline" onclick="goSeller()" style="font-size:12px;padding:7px 16px">Post Property</button>
+      <button class="nav-btn filled" onclick="showScreen('screen-home')" style="font-size:12px;padding:7px 16px">← Home</button>
+    </div>
+  </div>
+
+  <div class="buyer-search-sticky">
+    <div class="bss-row">
+      <div class="bss-input-wrap">
+        <span class="bss-search-icon">🔍</span>
+        <input class="bss-input" id="b-search" type="text" placeholder="Search property type, location…" oninput="onBuyerInput()" onkeydown="if(event.key==='Enter')renderBuyer()"/>
+      </div>
+      <button class="bss-btn" onclick="renderBuyer()">Search</button>
+    </div>
+    <div class="bss-filters" id="bss-filter-row">
+      <button class="fchip active" data-t="all" onclick="buyerChip(this,'all')">🏠 All Types</button>
+      <button class="fchip" data-t="house" onclick="buyerChip(this,'house')">🏠 Houses</button>
+      <button class="fchip" data-t="land" onclick="buyerChip(this,'land')">🌾 Land / Plots</button>
+      <button class="fchip" data-t="rental" onclick="buyerChip(this,'rental')">🏢 Rental Flat</button>
+      <button class="fchip" data-t="bachelor" onclick="buyerChip(this,'bachelor')">🛋️ Bachelor Rooms</button>
+      <button class="fchip" data-t="pg" onclick="buyerChip(this,'pg')">🎓 PG for Students</button>
+    </div>
+  </div>
+
+  <div class="buyer-body">
+    <!-- Filter Sidebar -->
+    <div class="filter-sidebar">
+      <div class="fs-section">
+        <div class="fs-title">Quality Grade</div>
+        <label class="fs-option grade-A"><input type="checkbox" id="f-a" checked onchange="renderBuyer()"/><span class="fs-label">Grade A — Excellent</span></label>
+        <label class="fs-option grade-B"><input type="checkbox" id="f-b" checked onchange="renderBuyer()"/><span class="fs-label">Grade B — Good</span></label>
+        <label class="fs-option grade-C"><input type="checkbox" id="f-c" checked onchange="renderBuyer()"/><span class="fs-label">Grade C — Fair</span></label>
+        <label class="fs-option grade-D"><input type="checkbox" id="f-d" checked onchange="renderBuyer()"/><span class="fs-label">Grade D — Poor</span></label>
+      </div>
+      <div class="fs-section">
+        <div class="fs-title">Property Type</div>
+        <label class="fs-option"><input type="checkbox" id="ft-house" checked onchange="renderBuyer()"/><span class="fs-label">🏠 Houses &amp; Villas</span></label>
+        <label class="fs-option"><input type="checkbox" id="ft-land" checked onchange="renderBuyer()"/><span class="fs-label">🌾 Land / Plots</span></label>
+        <label class="fs-option"><input type="checkbox" id="ft-rental" checked onchange="renderBuyer()"/><span class="fs-label">🏢 Rental Apartments</span></label>
+        <label class="fs-option"><input type="checkbox" id="ft-bachelor" checked onchange="renderBuyer()"/><span class="fs-label">🛋️ Bachelor Rooms</span></label>
+        <label class="fs-option"><input type="checkbox" id="ft-pg" checked onchange="renderBuyer()"/><span class="fs-label">🎓 PG for Students</span></label>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div class="results-main">
+      <div id="b-empty" class="buyer-empty">
+        <div class="be-icon">🏘️</div>
+        <div class="be-title">No listings yet</div>
+        <div class="be-sub">Switch to Seller mode, create a listing, upload photos and run AI grading — then listings will appear here ranked best to worst.</div>
+      </div>
+      <div id="b-results" style="display:none">
+        <div class="results-top-bar">
+          <div class="rt-left">
+            <div class="rt-count" id="b-count">0 <span>listings found</span></div>
+            <div class="grade-summary-pills" id="b-grade-pills"></div>
+          </div>
+          <div class="rt-right">
+            <span class="sort-label">Sort:</span>
+            <select class="sort-sel" id="b-sort" onchange="renderBuyer()">
+              <option value="grade-desc">Grade: Best First (A→D)</option>
+              <option value="grade-asc">Grade: Worst First (D→A)</option>
+              <option value="name">Seller Name</option>
+              <option value="photos">Most Photos</option>
+            </select>
+          </div>
+        </div>
+        <div class="prop-grid" id="b-grid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ ADD LISTING MODAL ════════ -->
+<div class="modal-overlay" id="add-modal" onclick="closeAddModal(event)">
+  <div class="modal-box">
+    <div class="modal-head">
+      <div class="modal-h-title">Post New Property</div>
+      <button class="modal-close" onclick="document.getElementById('add-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-field">
+        <label class="form-label">Seller / Agent Name *</label>
+        <input class="form-input" id="m-seller-name" type="text" placeholder="Your name or agency name"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Property Title *</label>
+        <input class="form-input" id="m-title" type="text" placeholder="e.g. 3BHK Spacious Apartment in Koramangala"/>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Property Type *</label>
+        <div class="prop-type-grid" id="pt-grid"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Price / Rent</label>
+          <input class="form-input" id="m-price" type="text" placeholder="e.g. ₹45 Lakhs or ₹12,000/mo"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Location / Area</label>
+          <input class="form-input" id="m-location" type="text" placeholder="e.g. Whitefield, Bangalore"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label class="form-label">Size (sq.ft)</label>
+          <input class="form-input" id="m-size" type="text" placeholder="e.g. 1200 sq.ft"/>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Bedrooms / Config</label>
+          <input class="form-input" id="m-bhk" type="text" placeholder="e.g. 2 BHK, Studio"/>
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="m-desc" placeholder="Briefly describe the property…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="mf-btn secondary" onclick="document.getElementById('add-modal').classList.remove('open')">Cancel</button>
+      <button class="mf-btn primary" onclick="confirmAddListing()">Create Listing</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════ LIGHTBOX ════════ -->
+<div class="lightbox" id="lightbox" onclick="closeLB(event)">
+  <div class="lb-box" id="lb-box">
+    <div class="lb-head" id="lb-head"></div>
+    <div class="lb-overview" id="lb-overview"></div>
+    <div class="lb-gallery-section" id="lb-gallery"></div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════ */
+const MODEL_URL = "https://teachablemachine.withgoogle.com/models/dIxYWx43c/";
+const MET_ICONS = {lighting:"💡",blur:"🔎",tilt:"📐",clutter:"📦",contrast:"🌗",exposure:"☀️"};
+const GRADE_LABEL = {A:"A — Excellent",B:"B — Good",C:"C — Fair",D:"D — Poor"};
+const GRADE_DESC = {
+  A:"Excellent photo quality — bright, sharp, level and well-presented.",
+  B:"Good quality with minor imperfections. Reliable for viewing.",
+  C:"Moderate quality. Some issues that may affect buyer perception.",
+  D:"Poor quality. Retaking photos is recommended."
+};
+const PROP_TYPES = [
+  {id:"house",   label:"House / Villa",       icon:"🏠"},
+  {id:"land",    label:"Land / Plot",          icon:"🌾"},
+  {id:"rental",  label:"Rental Apartment",     icon:"🏢"},
+  {id:"bachelor",label:"Bachelor Rooms",       icon:"🛋️"},
+  {id:"pg",      label:"PG for Students",      icon:"🎓"},
+];
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let tmModel = null;
+let listings = [];   // [{id,sellerName,title,propType,price,location,size,bhk,desc,images:[],graded}]
+let activeListingId = null;
+let selectedPropType = null;
+let listingIdCtr = 0, imgIdCtr = 0;
+let buyerTypeFilter = "all";
+let buyerSearchQ = "";
+
+/* ══════════════════════════════════════════
+   NAV HELPERS
+══════════════════════════════════════════ */
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); updateHomeStats(); }
+function goHome(){ showScreen('screen-home'); }
+async function goSeller(){ showScreen('screen-seller'); renderListingTabs(); renderWall(); loadSidebarPanel(); await bootModel(); }
+function goBuyer(){ showScreen('screen-buyer'); renderBuyer(); }
+
+/* ══════════════════════════════════════════
+   HOME STATS
+══════════════════════════════════════════ */
+function updateHomeStats(){
+  const graded=listings.filter(l=>l.graded);
+  const totalPhotos=listings.reduce((a,l)=>a+l.images.filter(i=>i.result).length,0);
+  document.getElementById('stat-listings').textContent=listings.length;
+  document.getElementById('stat-sellers').textContent=new Set(listings.map(l=>l.sellerName)).size;
+  document.getElementById('stat-graded').textContent=totalPhotos;
+}
+
+/* ══════════════════════════════════════════
+   HERO SEARCH
+══════════════════════════════════════════ */
+function setHSTab(el,tab){ document.querySelectorAll('.hs-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); }
+function heroSearch(){ const q=document.getElementById('hs-location').value.trim(); if(q){buyerSearchQ=q;} goBuyer(); }
+function heroPropFilter(type){ buyerTypeFilter=type; document.querySelectorAll('.fchip').forEach(c=>{c.classList.toggle('active',c.dataset.t===type)}); goBuyer(); }
+
+/* ══════════════════════════════════════════
+   MODEL
+══════════════════════════════════════════ */
+async function bootModel(){
+  if(tmModel)return;
+  setMS('loading','Loading AI model…');
+  try{ tmModel=await tmImage.load(MODEL_URL+"model.json",MODEL_URL+"metadata.json"); setMS('ready','AI Model Ready'); }
+  catch(e){ setMS('','Error loading model'); }
+}
+function setMS(state,txt){
+  const d=document.getElementById('ms-dot'),t=document.getElementById('ms-txt');
+  d.className='ms-dot '+(state==='ready'?'ready':state==='loading'?'loading':'');
+  t.textContent=txt;
+}
+
+/* ══════════════════════════════════════════
+   ADD LISTING MODAL
+══════════════════════════════════════════ */
+function buildPropTypeGrid(){
+  const g=document.getElementById('pt-grid'); g.innerHTML='';
+  PROP_TYPES.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='pt-opt'+(selectedPropType===p.id?' sel':'');
+    d.onclick=()=>{selectedPropType=p.id;buildPropTypeGrid();};
+    d.innerHTML=`<span class="pt-icon">${p.icon}</span><span class="pt-label">${p.label}</span>`;
+    g.appendChild(d);
+  });
+}
+function openAddModal(){
+  selectedPropType=null;
+  ['m-seller-name','m-title','m-price','m-location','m-size','m-bhk','m-desc'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  buildPropTypeGrid();
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('m-seller-name').focus(),80);
+}
+function closeAddModal(e){ if(e.target===document.getElementById('add-modal'))document.getElementById('add-modal').classList.remove('open'); }
+function confirmAddListing(){
+  const name=document.getElementById('m-seller-name').value.trim();
+  const title=document.getElementById('m-title').value.trim();
+  if(!name||!title){ alert('Seller name and property title are required.'); return; }
+  if(!selectedPropType){ alert('Please select a property type.'); return; }
+  const id=++listingIdCtr;
+  listings.push({
+    id,sellerName:name,title,propType:selectedPropType,
+    price:document.getElementById('m-price').value.trim(),
+    location:document.getElementById('m-location').value.trim(),
+    size:document.getElementById('m-size').value.trim(),
+    bhk:document.getElementById('m-bhk').value.trim(),
+    desc:document.getElementById('m-desc').value.trim(),
+    images:[],graded:false
+  });
+  activeListingId=id;
+  document.getElementById('add-modal').classList.remove('open');
+  renderListingTabs(); renderWall(); loadSidebarPanel(); updateHomeStats();
+}
+
+/* ══════════════════════════════════════════
+   LISTING TABS
+══════════════════════════════════════════ */
+function renderListingTabs(){
+  const wrap=document.getElementById('listing-tabs'); wrap.innerHTML='';
+  listings.forEach(l=>{
+    const btn=document.createElement('button');
+    btn.className='ltab'+(l.id===activeListingId?' active':'')+(l.images.length>0?' has-data':'');
+    btn.textContent=l.title.length>16?l.title.slice(0,15)+'…':l.title;
+    btn.title=l.title+' — '+l.sellerName;
+    btn.onclick=()=>{activeListingId=l.id;renderListingTabs();loadSidebarPanel();};
+    wrap.appendChild(btn);
+  });
+}
+
+function loadSidebarPanel(){
+  const wrap=document.getElementById('sb-upload-wrap');
+  const l=listings.find(x=>x.id===activeListingId);
+  if(!l){ wrap.style.display='none'; document.getElementById('sb-title').textContent='Select a Listing'; document.getElementById('sb-sub').textContent='Choose a listing tab or post a new property.'; return; }
+  const pt=PROP_TYPES.find(p=>p.id===l.propType);
+  document.getElementById('sb-title').textContent=l.title;
+  document.getElementById('sb-sub').textContent=(pt?pt.icon+' '+pt.label:'')+(l.location?' · '+l.location:'')+(l.price?' · '+l.price:'');
+  wrap.style.display='block';
+  updateCountBar(l.images.length);
+  document.getElementById('sb-thumbs-sec').style.display=l.images.length>0?'block':'none';
+  document.getElementById('sb-actions').style.display=l.images.length>0?'flex':'none';
+  document.getElementById('sb-prog-wrap').style.display='none';
+  renderThumbs();
+}
+function updateCountBar(n){
+  document.getElementById('s-count').textContent=n+' / 10 photos';
+  document.getElementById('s-count-pct').textContent=Math.round(n/10*100)+'%';
+  document.getElementById('s-cbar').style.width=(n/10*100)+'%';
+}
+
+/* ══════════════════════════════════════════
+   FILE UPLOAD
+══════════════════════════════════════════ */
+const sdz=document.getElementById('s-dz');
+sdz.addEventListener('dragover',e=>{e.preventDefault();sdz.classList.add('drag');});
+sdz.addEventListener('dragleave',()=>sdz.classList.remove('drag'));
+sdz.addEventListener('drop',e=>{e.preventDefault();sdz.classList.remove('drag');addFiles(Array.from(e.dataTransfer.files).filter(f=>f.type.startsWith('image/')));});
+function handleSellerFiles(e){addFiles(Array.from(e.target.files));e.target.value='';}
+
+function addFiles(files){
+  const l=listings.find(x=>x.id===activeListingId); if(!l)return;
+  const slots=10-l.images.length; if(slots<=0)return;
+  files.slice(0,slots).forEach(file=>{
+    const id=imgIdCtr++;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      const img=new Image();
+      img.onload=()=>{l.images.push({id,file,dataURL:ev.target.result,imgEl:img,result:null});l.graded=false;loadSidebarPanel();renderWall();renderListingTabs();updateHomeStats();};
+      img.src=ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function renderThumbs(){
+  const l=listings.find(x=>x.id===activeListingId); if(!l)return;
+  const g=document.getElementById('sb-thumbs'); g.innerHTML='';
+  l.images.forEach(item=>{
+    const r=item.result;
+    const cell=document.createElement('div'); cell.className='tc';
+    cell.innerHTML=`<img src="${item.dataURL}"/><button class="tr-btn" onclick="removeImg(${item.id},event)">✕</button><div class="t-bar ${r?r.grade:''}" id="tb${item.id}"></div><div class="t-grd ${r?r.grade:''}" id="tg${item.id}">${r?r.grade:''}</div>`;
+    g.appendChild(cell);
+  });
+}
+function removeImg(id,e){
+  e.stopPropagation();
+  const l=listings.find(x=>x.id===activeListingId); if(!l)return;
+  l.images=l.images.filter(i=>i.id!==id); l.graded=false;
+  loadSidebarPanel(); renderWall(); renderListingTabs(); updateHomeStats();
+}
+function clearListingImgs(){
+  const l=listings.find(x=>x.id===activeListingId); if(!l)return;
+  l.images=[]; l.graded=false;
+  loadSidebarPanel(); renderWall(); renderListingTabs(); updateHomeStats();
+}
+function deleteListing(){
+  if(!confirm('Delete this listing permanently?'))return;
+  listings=listings.filter(x=>x.id!==activeListingId);
+  activeListingId=listings.length?listings[listings.length-1].id:null;
+  renderListingTabs(); renderWall(); loadSidebarPanel(); updateHomeStats();
+}
+
+/* ══════════════════════════════════════════
+   ANALYSE ALL
+══════════════════════════════════════════ */
+async function analyseAll(){
+  const l=listings.find(x=>x.id===activeListingId); if(!l||!l.images.length)return;
+  if(!tmModel){await bootModel();}
+  const btn=document.getElementById('sb-analyse-btn'); btn.disabled=true;
+  const pw=document.getElementById('sb-prog-wrap'),pf=document.getElementById('sb-prog-fill'),pl=document.getElementById('sb-prog-lbl');
+  pw.style.display='block';
+  for(let i=0;i<l.images.length;i++){
+    const item=l.images[i];
+    const tb=document.getElementById('tb'+item.id); if(tb)tb.className='t-bar proc';
+    pf.style.width=Math.round(i/l.images.length*100)+'%';
+    pl.textContent='Analysing photo '+(i+1)+' of '+l.images.length+'…';
+    const cc=document.createElement('canvas');cc.width=224;cc.height=224;cc.getContext('2d').drawImage(item.imgEl,0,0,224,224);
+    const preds=await tmModel.predict(cc); preds.sort((a,b)=>b.probability-a.probability);
+    const fc=document.createElement('canvas');fc.width=item.imgEl.naturalWidth||400;fc.height=item.imgEl.naturalHeight||300;fc.getContext('2d').drawImage(item.imgEl,0,0);
+    const q=analyseQuality(fc);
+    item.result={...q,predictions:preds,topRoom:preds[0].className.toLowerCase(),topConf:Math.round(preds[0].probability*100)};
+    if(tb)tb.className='t-bar '+q.grade;
+    const tg=document.getElementById('tg'+item.id); if(tg){tg.className='t-grd '+q.grade;tg.textContent=q.grade;}
+  }
+  pf.style.width='100%'; pl.textContent='✓ All photos analysed!';
+  l.graded=true; btn.disabled=false;
+  setTimeout(()=>{pw.style.display='none';},1400);
+  renderWall(); renderListingTabs(); updateHomeStats();
+}
+
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function avgScore(l){ const g=l.images.filter(i=>i.result); return g.length?Math.round(g.reduce((a,i)=>a+i.result.overall,0)/g.length):null; }
+function scoreGrade(sc){ if(sc===null)return null; return sc>=78?'A':sc>=58?'B':sc>=38?'C':'D'; }
+function avgMetrics(l){
+  const g=l.images.filter(i=>i.result); if(!g.length)return null;
+  const keys=['lighting','blur','tilt','clutter','contrast','exposure'],out={};
+  keys.forEach(k=>{out[k]={score:Math.round(g.reduce((a,i)=>a+i.result.metrics[k].score,0)/g.length),label:g[0].result.metrics[k].label};});
+  return out;
+}
+function mosaicHtml(imgs,cls){
+  const n=Math.min(imgs.length,4);
+  if(!n)return`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:36px;opacity:.2">📷</div>`;
+  const g=n===1?'g1':n===2?'g2':n===3?'g3':'g4';
+  return`<div class="${cls} ${g}">${imgs.slice(0,n).map(i=>`<img src="${i.dataURL}"/>`).join('')}</div>`;
+}
+function ptIcon(id){ return PROP_TYPES.find(p=>p.id===id)?.icon||'🏠'; }
+function ptLabel(id){ return PROP_TYPES.find(p=>p.id===id)?.label||id; }
+
+/* ══════════════════════════════════════════
+   SELLER WALL
+══════════════════════════════════════════ */
+function renderWall(){
+  const grid=document.getElementById('wall-grid');
+  document.getElementById('wall-sub').textContent=listings.length+' listing'+(listings.length!==1?'s':'')+' · click a graded card to preview';
+  if(!listings.length){grid.innerHTML=`<div style="color:var(--muted);font-size:13px;padding:20px 0;font-weight:500">No listings yet. Click <strong>Post New Property</strong> to begin.</div>`;return;}
+  grid.innerHTML='';
+  listings.forEach(l=>{
+    const sc=avgScore(l),grade=scoreGrade(sc);
+    const card=document.createElement('div');
+    card.className='wl-card'+(grade?' clickable':'');
+    if(grade) card.onclick=()=>openLB(l);
+    card.innerHTML=`
+      <div class="wl-mosaic">
+        ${mosaicHtml(l.images,'wl-mosaic-grid')}
+        <div class="wl-type-tag">${ptIcon(l.propType)} ${ptLabel(l.propType)}</div>
+        ${grade?`<div class="wl-grade-badge ${grade}">${grade}</div>`:''}
+        ${grade?`<div class="wl-score-bar"><div class="f ${grade}" style="width:${sc}%"></div></div>`:''}
+      </div>
+      <div class="wl-info">
+        <div class="wl-name" title="${l.title}">${l.title}</div>
+        ${l.price?`<div class="wl-price">${l.price}</div>`:'<div class="wl-price" style="color:var(--muted);font-size:12px">Price TBD</div>'}
+        <div class="wl-meta">${l.location?`<span>📍 ${l.location}</span><span class="wl-meta-dot"></span>`:''}${l.bhk?`<span>${l.bhk}</span><span class="wl-meta-dot"></span>`:''}${l.size?`<span>${l.size}</span>`:''}</div>
+        <div class="wl-score-row">
+          ${grade?`<span class="wl-score ${grade}">Grade ${grade} · ${sc}/100</span>`:`<span style="font-size:10px;color:var(--muted)">Not yet graded</span>`}
+          <span class="wl-photos">📷 ${l.images.length} photos</span>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════
+   BUYER RENDER
+══════════════════════════════════════════ */
+function onBuyerInput(){ buyerSearchQ=document.getElementById('b-search').value.trim().toLowerCase(); renderBuyer(); }
+function buyerChip(el,type){
+  document.querySelectorAll('.fchip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active'); buyerTypeFilter=type; renderBuyer();
+}
+
+function renderBuyer(){
+  const empty=document.getElementById('b-empty'),results=document.getElementById('b-results');
+  // only graded listings
+  let data=listings.filter(l=>l.graded&&l.images.some(i=>i.result));
+  if(!data.length){empty.style.display='flex';results.style.display='none';return;}
+
+  // grade checkboxes
+  const allowGrades=[];
+  if(document.getElementById('f-a')?.checked)allowGrades.push('A');
+  if(document.getElementById('f-b')?.checked)allowGrades.push('B');
+  if(document.getElementById('f-c')?.checked)allowGrades.push('C');
+  if(document.getElementById('f-d')?.checked)allowGrades.push('D');
+
+  // type checkboxes
+  const allowTypes=[];
+  if(document.getElementById('ft-house')?.checked)allowTypes.push('house');
+  if(document.getElementById('ft-land')?.checked)allowTypes.push('land');
+  if(document.getElementById('ft-rental')?.checked)allowTypes.push('rental');
+  if(document.getElementById('ft-bachelor')?.checked)allowTypes.push('bachelor');
+  if(document.getElementById('ft-pg')?.checked)allowTypes.push('pg');
+
+  // filter
+  data=data.filter(l=>{
+    const sc=avgScore(l),grade=scoreGrade(sc);
+    if(!grade||!allowGrades.includes(grade))return false;
+    if(!allowTypes.includes(l.propType))return false;
+    if(buyerTypeFilter!=='all'&&l.propType!==buyerTypeFilter)return false;
+    if(buyerSearchQ){
+      const q=buyerSearchQ;
+      return l.title.toLowerCase().includes(q)||l.location.toLowerCase().includes(q)||l.sellerName.toLowerCase().includes(q)||ptLabel(l.propType).toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  // sort
+  const sv=document.getElementById('b-sort').value;
+  data=data.map(l=>({l,sc:avgScore(l),grade:scoreGrade(avgScore(l))}));
+  if(sv==='grade-desc')       data.sort((a,b)=>b.sc-a.sc);
+  else if(sv==='grade-asc')   data.sort((a,b)=>a.sc-b.sc);
+  else if(sv==='name')        data.sort((a,b)=>a.l.sellerName.localeCompare(b.l.sellerName));
+  else                        data.sort((a,b)=>b.l.images.length-a.l.images.length);
+
+  if(!data.length){
+    empty.innerHTML=`<div class="be-icon">🔍</div><div class="be-title">No listings match</div><div class="be-sub">Try adjusting your filters or search term.</div>`;
+    empty.style.display='flex';results.style.display='none';return;
+  }
+  empty.style.display='none';results.style.display='block';
+
+  // count
+  document.getElementById('b-count').innerHTML=data.length+` <span>listing${data.length!==1?'s':''} found</span>`;
+
+  // grade pills
+  const gc={A:0,B:0,C:0,D:0};data.forEach(({grade})=>gc[grade]++);
+  document.getElementById('b-grade-pills').innerHTML=['A','B','C','D'].filter(g=>gc[g]>0).map(g=>`<span class="gsp ${g}">${g}: ${gc[g]}</span>`).join('');
+
+  const grid=document.getElementById('b-grid'); grid.innerHTML='';
+  data.forEach(({l,sc,grade},idx)=>{
+    const rank=idx+1,rc=rank<=3?'r'+rank:'rn',rl=rank===1?'#1 Best':rank===2?'#2':rank===3?'#3':`#${rank}`;
+    const met=avgMetrics(l);
+    let metChips='';
+    if(met){const top=Object.entries(met).sort((a,b)=>b[1].score-a[1].score).slice(0,3);metChips=top.map(([k,m])=>`<span class="pc-mc ${m.score>=70?'good':m.score>=45?'ok':'bad'}">${MET_ICONS[k]} ${m.score}</span>`).join('');}
+    const card=document.createElement('div');
+    card.className='prop-card';card.style.animationDelay=(idx*.055)+'s';
+    card.onclick=()=>openLB(l,true);
+    card.innerHTML=`
+      <div class="pc-img-wrap">
+        ${mosaicHtml(l.images,'pc-mosaic')}
+        <div class="pc-rank-tag ${rc}">${rl}</div>
+        <div class="pc-grade-circle ${grade}">${grade}</div>
+        <div class="pc-prop-type">${ptIcon(l.propType)} ${ptLabel(l.propType)}</div>
+        <div class="pc-photo-count">📷 ${l.images.length}</div>
+        <div class="pc-score-strip"><div class="sf ${grade}" style="width:${sc}%"></div></div>
+      </div>
+      <div class="pc-body">
+        <div class="pc-type-badge ${l.propType}">${ptIcon(l.propType)} ${ptLabel(l.propType)}</div>
+        <div class="pc-name" title="${l.title}">${l.title}</div>
+        <div class="pc-price">${l.price||'Price on Request'}</div>
+        <div class="pc-amenities">${l.bhk?`<span class="pc-amenity">🛏️ ${l.bhk}</span>`:''} ${l.size?`<span class="pc-amenity">📐 ${l.size}</span>`:''}</div>
+        ${l.location?`<div class="pc-location">📍 ${l.location}</div>`:''}
+        <div class="pc-bottom">
+          <div>
+            <div class="pc-seller-name">By ${l.sellerName}</div>
+            <div class="pc-metrics-row">${metChips}</div>
+          </div>
+          <div class="pc-score-label ${grade}">Grade ${grade} · ${sc}/100</div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════
+   LIGHTBOX
+══════════════════════════════════════════ */
+function openLB(l, isBuyer=false){
+  const sc=avgScore(l),grade=scoreGrade(sc),met=avgMetrics(l);
+  const pt=PROP_TYPES.find(p=>p.id===l.propType);
+
+  // head
+  document.getElementById('lb-head').innerHTML=`
+    <div class="lb-prop-info">
+      <div class="lb-prop-type">${pt?pt.icon+' '+pt.label:'Property'}</div>
+      <div class="lb-prop-name">${l.title}</div>
+      <div class="lb-prop-price">${l.price||'Price on Request'}</div>
+      <div class="lb-prop-meta">
+        ${l.location?`<span>📍 ${l.location}</span>`:''}
+        ${l.bhk?`<span>🛏️ ${l.bhk}</span>`:''}
+        ${l.size?`<span>📐 ${l.size}</span>`:''}
+        <span>By ${l.sellerName}</span>
+      </div>
+    </div>
+    <div class="lb-head-right">
+      ${grade?`<div class="lb-grade-big ${grade}">${grade}</div>`:''}
+      <button class="lb-close" onclick="document.getElementById('lightbox').classList.remove('open')">✕</button>
+    </div>`;
+
+  // overview
+  let metGrid='<div class="lb-metrics-grid">';
+  if(met){
+    Object.entries(met).forEach(([k,m])=>{
+      const cls=m.score>=70?'good':m.score>=45?'ok':'bad';
+      metGrid+=`<div class="lb-mm"><div class="lb-mm-top"><span class="lb-mm-name">${MET_ICONS[k]} ${k}</span><span class="lb-mm-val ${cls}">${m.score}</span></div><div class="lb-bar"><div class="lb-bar-fill ${cls}" style="width:${m.score}%"></div></div><div class="lb-mm-lbl">${m.label}</div></div>`;
+    });
+  }
+  metGrid+='</div>';
+  document.getElementById('lb-overview').innerHTML=`
+    <div class="lb-grade-summary">
+      <div class="lb-grade-circle ${grade}">${grade}</div>
+      <div class="lb-grade-txt">
+        <div class="lb-grade-label ${grade}">${GRADE_LABEL[grade]||'—'}</div>
+        <div class="lb-grade-desc">${GRADE_DESC[grade]||''} Score: ${sc}/100</div>
+      </div>
+    </div>
+    ${metGrid}`;
+
+  // gallery — all photos sorted best to worst
+  const sorted=[...l.images.filter(i=>i.result)].sort((a,b)=>b.result.overall-a.result.overall);
+  const galleryItems=sorted.map((im,i)=>`
+    <div class="lb-photo-item">
+      <img src="${im.dataURL}" alt="Photo ${i+1}"/>
+      <div class="lb-photo-info">
+        <div class="lb-photo-room">${im.result.topRoom}</div>
+        <div class="lb-photo-meta">
+          <span>${im.result.topConf}% match</span>
+          <span class="lb-photo-grade ${im.result.grade}">${im.result.grade} · ${im.result.overall}/100</span>
+        </div>
+        <div class="lb-score-mini"><div class="lb-score-mini-fill ${im.result.grade}" style="width:${im.result.overall}%"></div></div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('lb-gallery').innerHTML=`
+    <div class="lb-gallery-head">
+      <div class="lb-gallery-title">All Property Photos (${sorted.length})</div>
+      <div class="lb-gallery-sub">Sorted best → worst quality · ${l.desc||''}</div>
+    </div>
+    <div class="lb-photo-grid">${galleryItems||'<div style="color:var(--muted);font-size:13px">No analysed photos yet.</div>'}</div>`;
+
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLB(e){ if(e.target===document.getElementById('lightbox'))document.getElementById('lightbox').classList.remove('open'); }
+
+/* ══════════════════════════════════════════
+   IMAGE QUALITY ENGINE
+══════════════════════════════════════════ */
+function analyseQuality(canvas){
+  const ctx=canvas.getContext('2d'),w=canvas.width,h=canvas.height,total=w*h,data=ctx.getImageData(0,0,w,h).data;
+  const lums=new Float32Array(total);let lumSum=0,darkPx=0,brightPx=0;
+  for(let i=0;i<total;i++){const lum=.2126*data[i*4]+.7152*data[i*4+1]+.0722*data[i*4+2];lums[i]=lum;lumSum+=lum;if(lum<50)darkPx++;if(lum>220)brightPx++;}
+  const avgLum=lumSum/total,darkR=darkPx/total,brightR=brightPx/total;
+  let ll,ls;
+  if(avgLum>160&&darkR<.10&&brightR<.15){ll='Good Lighting';ls=92;}else if(avgLum>100&&darkR<.25){ll='Moderate Lighting';ls=65;}else if(avgLum<50||darkR>.50){ll='Bad Lighting';ls=22;}else{ll='Moderate Lighting';ls=50;}
+  let es;if(brightR>.35)es=18;else if(brightR>.20||darkR>.35)es=50;else if(brightR<.05&&darkR<.10)es=92;else es=78;
+  const el=brightR>.25?'Overexposed':darkR>.35?'Underexposed':es>70?'Balanced':'Slightly Off';
+  let minL=255,maxL=0;for(let i=0;i<total;i++){if(lums[i]<minL)minL=lums[i];if(lums[i]>maxL)maxL=lums[i];}
+  const cs=Math.min(100,Math.round((maxL-minL)/255*130)),cl=cs>70?'Good':cs>40?'Low':'Very Low';
+  const dW=Math.min(w,200),dH=Math.min(h,200);
+  const ds=document.createElement('canvas');ds.width=dW;ds.height=dH;ds.getContext('2d').drawImage(canvas,0,0,dW,dH);
+  const dd=ds.getContext('2d').getImageData(0,0,dW,dH).data;
+  const g=new Float32Array(dW*dH);for(let i=0;i<dW*dH;i++)g[i]=.2126*dd[i*4]+.7152*dd[i*4+1]+.0722*dd[i*4+2];
+  let lS=0,lC=0;for(let y=1;y<dH-1;y++)for(let x=1;x<dW-1;x++){const l=-4*g[y*dW+x]+g[(y-1)*dW+x]+g[(y+1)*dW+x]+g[y*dW+x-1]+g[y*dW+x+1];lS+=l*l;lC++;}
+  const lv=lS/lC;let bs;if(lv>300)bs=95;else if(lv>150)bs=78;else if(lv>60)bs=55;else if(lv>20)bs=32;else bs=12;
+  const bl=bs>75?'Sharp':bs>50?'Slight Blur':bs>30?'Blurry':'Very Blurry';
+  let str=0,dia=0;
+  for(let y=1;y<dH-1;y++)for(let x=1;x<dW-1;x++){const gx=-g[(y-1)*dW+(x-1)]+g[(y-1)*dW+(x+1)]-2*g[y*dW+(x-1)]+2*g[y*dW+(x+1)]-g[(y+1)*dW+(x-1)]+g[(y+1)*dW+(x+1)];const gy=-g[(y-1)*dW+(x-1)]-2*g[(y-1)*dW+x]-g[(y-1)*dW+(x+1)]+g[(y+1)*dW+(x-1)]+2*g[(y+1)*dW+x]+g[(y+1)*dW+(x+1)];const m=Math.sqrt(gx*gx+gy*gy);if(m<15)continue;const a=Math.abs(Math.atan2(gy,gx)*180/Math.PI),na=a>90?180-a:a;if(na<20||na>70)str++;else dia++;}
+  const sr=str/(str+dia||1);let ts;if(sr>.72)ts=92;else if(sr>.55)ts=70;else if(sr>.40)ts=45;else ts=20;
+  const tl=ts>72?'Level / Straight':ts>50?'Slight Tilt':ts>35?'Noticeable Tilt':'Heavily Tilted';
+  const ps=16;let hV=0,tP=0;
+  for(let py=0;py<dH-ps;py+=ps)for(let px=0;px<dW-ps;px+=ps){let mn=0,n=0;for(let dy=0;dy<ps;dy++)for(let dx=0;dx<ps;dx++){mn+=g[(py+dy)*dW+(px+dx)];n++;}mn/=n;let vr=0;for(let dy=0;dy<ps;dy++)for(let dx=0;dx<ps;dx++){const d=g[(py+dy)*dW+(px+dx)]-mn;vr+=d*d;}vr/=n;if(vr>400)hV++;tP++;}
+  const cr=hV/(tP||1);let clS;if(cr<.18)clS=92;else if(cr<.32)clS=70;else if(cr<.50)clS=45;else clS=20;
+  const clL=clS>75?'Clean':clS>50?'Moderate':clS>35?'Cluttered':'Very Cluttered';
+  const overall=Math.round(ls*.25+bs*.25+ts*.15+clS*.15+cs*.10+es*.10);
+  const grade=overall>=78?'A':overall>=58?'B':overall>=38?'C':'D';
+  return{grade,overall,metrics:{lighting:{score:ls,label:ll},blur:{score:bs,label:bl},tilt:{score:ts,label:tl},clutter:{score:clS,label:clL},contrast:{score:cs,label:cl},exposure:{score:es,label:el}}};
+}
+</script>
+</body>
+</html>
